@@ -46,6 +46,42 @@ When the Sesame model attempts to map the audio to the text and finds a mismatch
 If you provide an extremely long reference audio (e.g., 2 minutes) or ask it to generate massive paragraphs of text at once, the 16-bit model's Context Window will overflow. Instead of throwing a clean error immediately, MLX will silently deadlock the GPU cache and hang indefinitely.
 * **The Fix:** Truncate all reference audio clips to a maximum of 15 seconds using `ffmpeg`. If you are generating a long speech, split the target text into smaller chunks (e.g., 50 words each) and generate them sequentially.
 
+### Hack 5: Removing the AI Watermark
+MisoTTS attempts to inject an imperceptible cryptographic watermark into the generated `.wav` files to identify them as AI-generated. This watermark drastically slows down generation and alters the raw audio output.
+* **The Fix:** To permanently disable watermarking, you must patch the MLX generation source code. Open `site-packages/mlx_audio/tts/models/sesame/sesame.py` and modify the `generate_result` function. Find the line `if self._watermarker is not None:` and hardcode it to `if False: # WATERMARKING DISABLED`.
+
+---
+
+## 🎙️ Code Example: Perfect Voice Cloning
+
+To run a flawless voice clone out of the box, we have provided an `examples/example_voice_clone.py` script. Here is the optimal boilerplate code to bypass all the bugs:
+
+```python
+from mlx_generate_source import generate_audio
+
+tts_kwargs = {
+    # 1. Your target text (Keep under 50-60 words per generation)
+    "text": "I think it's fundamentally important that we become a multi-planetary species.",
+    "model": "mlx-community/MisoLabs-MisoTTS-bf16",
+    
+    # 2. CRITICAL: Override the hidden fallback voice!
+    "voice": None, 
+    
+    # 3. CRITICAL: Point to a 10-15 second truncated reference clip!
+    "ref_audio": "./examples/elon_reference.wav",
+    
+    # 4. Auto-transcribe the reference. (If Whisper fails, manually type the transcript here)
+    "ref_text": None,
+    
+    "output_path": "./",
+    "file_prefix": "my_perfect_clone",
+    "audio_format": "wav",
+    "join_audio": True,
+}
+
+generate_audio(**tts_kwargs)
+```
+
 ---
 
 ## 🚀 Setup & Execution
