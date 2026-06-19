@@ -8,6 +8,7 @@ venv.bak/
 
 # Audio files
 *.wav
+!examples/*.wav
 *.flac
 *.mp3
 *.m4a
